@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/image">
+        <file alias="status_available">res/image/status_available.png</file>
+        <file alias="status_closed">res/image/status_closed.png</file>
+        <file alias="status_opened">res/image/status_opened.png</file>
+    </qresource>
+</RCC>
