@@ -21,7 +21,9 @@ public slots:
     void h_openClosePB();
     void h_kinectOpen(bool result);
     void h_kinectAvailable(bool result);
-    //void setOpenClosePB()
+    void h_kinectStream();
+
+    void setUI(QWidget* widget);
 
 private:
     QGridLayout* ui_rootLt;
@@ -30,9 +32,16 @@ private:
     QGroupBox* ui_ctrlGB;
     QGridLayout* ui_ctrlGBLt;
     QPushButton* ui_openClosePB;
-    QIcon* ico_available;
-    QIcon* ico_closed;
-    QIcon* ico_opened;
+    QIcon ico_available;
+    QString str_available;
+    QIcon ico_closed;
+    QString str_closed;
+    QIcon ico_opened;
+    QString str_opened;
+    QIcon ico_stream;
+    QString str_stream;
+
+    QWidget* ui_comWgt;
 
     KLController* ctrler;
 

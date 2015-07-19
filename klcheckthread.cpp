@@ -50,14 +50,7 @@ void KLCheckThread::run()
 {
     isStop = false;
     while(!isStop){
-//        KLComPtr<IIsAvailableChangedEventArgs> args;
-//        auto ret = sensor->GetIsAvailableChangedEventData(isAvailableEvent, &args);
-//        if(ret != S_OK){
-//            continue;
-//        }
-//        BOOLEAN available = false;
-//        args->get_IsAvailable( &available );
-//        qDebug()<<available;
+
         if(!sensor) break;
 
         BOOLEAN available = false;

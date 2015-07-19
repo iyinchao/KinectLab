@@ -6,6 +6,7 @@
 #include "klcheckthread.h"
 #include "klcommon.h"
 #include <QDebug>
+#include <QVector2D>
 
 class KLController: public QThread
 {
@@ -28,15 +29,18 @@ public:
     void open();
     void startStream(int source = -1);
     void stopStream();
+    const IColorFrameReader* getReader(int source);
+    const IFrameDescription* getFrameDesc(int source);
+    const int getSourceMarker();
     bool isOpened();
     bool isAvailable();
     IKinectSensor* getSensor();
 
 public slots:
     /* adapter slots */
-    void __connect(bool result);
     void __hrError(HRESULT hr);
 
+    void h_connect(bool result);
     void h_started();
     void h_finished();
 
@@ -44,7 +48,9 @@ signals:
     void _open(bool);
     void _available(bool);
     void _hrError(HRESULT);
-
+    void _readerChanged(bool, unsigned int);
+    void _stream(bool);
+    void _data(void*, unsigned int);
 
 protected:
      void run();
@@ -63,6 +69,7 @@ private:
      unsigned int sourceMarker;
      IColorFrameReader* colorReader;
      IFrameDescription* colorDesc;
+     QVector<BYTE>* colorBuffer;
 
 
 };

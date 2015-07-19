@@ -6,9 +6,13 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QLabel>
+#include <QIcon>
+#include <QAction>
 
 #include "klcontroller.h"
 #include "klctrlpanel.h"
+
+#include "module/klmknft.h"
 
 class KinectLab : public QMainWindow
 {
@@ -18,17 +22,30 @@ public:
     explicit KinectLab(QWidget *parent = 0);
     ~KinectLab();
 
+public slots:
+    void loadModule();
+    void h_moduleSetTitle(const QString& string, int target);
+    void h_moduleSetUI(QWidget* widget, int target);
+    void setUI(QWidget* widget);
+
 private:
     /* functions */
     void initUI();
 
     /* members */
     //ui components
-    QMenu* ui_fileMenu;
     QGridLayout* ui_mainLt;
     QWidget* ui_mainWgt;
-    QLabel* ui_view2D;
     KLCtrlPanel* ui_ctrlPanel;
+    QWidget* ui_comWgt;
+
+    QMenu* ui_fileMenu;
+    QMenu* ui_moduleMenu;
+    QMenu* ui_aboutMenu;
+    QIcon ico_menuModule;
+    QAction* act_m_knft;
+
+    KLMBase* m_module;
 };
 
 #endif // MAINWINDOW_H

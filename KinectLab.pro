@@ -17,7 +17,10 @@ SOURCES += main.cpp \
     kl2dview.cpp \
     klcontroller.cpp \
     klcheckthread.cpp \
-    klctrlpanel.cpp
+    klctrlpanel.cpp \
+    module/klmbase.cpp \
+    kl3dview.cpp \
+    module/klmknft.cpp
 
 HEADERS  += \
     kinectlab.h \
@@ -25,7 +28,10 @@ HEADERS  += \
     klcontroller.h \
     klcheckthread.h \
     klctrlpanel.h \
-    klcommon.h
+    klcommon.h \
+    module/klmbase.h \
+    kl3dview.h \
+    module/klmknft.h
 
 FORMS    +=
 
@@ -48,3 +54,6 @@ RC_ICONS = res/main.ico
 
 RESOURCES += \
     kinectlab.qrc
+
+OTHER_FILES += \
+    README.md

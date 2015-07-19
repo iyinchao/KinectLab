@@ -4,13 +4,14 @@ KLController::KLController():
     sensor(NULL),
     isStop(true),
     sourceMarker(SOURCE_TYPE::NONE),
-    colorReader(NULL)
+    colorReader(NULL),
+    colorBuffer(NULL)
 {
     connect(this, SIGNAL(started()), this, SLOT(h_started()));
     connect(this, SIGNAL(finished()), this, SLOT(h_finished()));
     checkThread = new KLCheckThread(sensor);
     checkThread->setCheckInterval(300);
-    connect(checkThread, SIGNAL(_connect(bool)), this, SLOT(__connect(bool)));
+    connect(checkThread, SIGNAL(_connect(bool)), this, SLOT(h_connect(bool)));
     connect(checkThread, SIGNAL(_hrError(HRESULT)), this, SLOT(__hrError(HRESULT)));
 
 }
@@ -44,6 +45,7 @@ void KLController::close()
         checkThread->wait();
         safeRelease(sensor);
         qDebug()<<"[KLController] Closed";
+        stopStream();
         emit _open(false);
     }else{
         emit _hrError(hr);
@@ -52,7 +54,7 @@ void KLController::close()
 
 void KLController::open()
 {
-    if(isOpened() && checkThread && !checkThread->isRunning()){
+    if(isOpened() && checkThread && checkThread->isRunning()){
         return;
     }
     checkThread->stop();
@@ -91,6 +93,27 @@ void KLController::stopStream()
     this->wait();
 }
 
+const IColorFrameReader *KLController::getReader(int source)
+{
+    if(source == SOURCE_TYPE::COLOR){
+        return colorReader;
+    }
+    return NULL;
+}
+
+const IFrameDescription *KLController::getFrameDesc(int source)
+{
+    if(source == SOURCE_TYPE::COLOR){
+        return colorDesc;
+    }
+    return NULL;
+}
+
+const int KLController::getSourceMarker()
+{
+    return sourceMarker;
+}
+
 bool KLController::isOpened()
 {
     if(!sensor){
@@ -123,14 +146,17 @@ IKinectSensor *KLController::getSensor()
     return sensor;
 }
 
-void KLController::__connect(bool result)
-{
-    emit _available(result);
-}
-
 void KLController::__hrError(HRESULT hr)
 {
     emit _hrError(hr);
+}
+
+void KLController::h_connect(bool result)
+{
+    if(!result){
+        stopStream();
+    }
+    emit _available(result);
 }
 
 void KLController::h_started()
@@ -148,11 +174,14 @@ void KLController::run()
     isStop = false;
     while(!isStop){
         if(!isAvailable()){
-            break;
+            break; //Not continue, otherwise it will still use cpu
         }
         HRESULT hr;
         if(sourceMarker == SOURCE_TYPE::NONE){
             break;
+        }
+        if(sourceMarker == SOURCE_TYPE::MULTI){
+            continue;
         }
         if(sourceMarker & SOURCE_TYPE::COLOR){
             if(!colorReader){
@@ -174,6 +203,15 @@ void KLController::run()
                 }
                 if(SUCCEEDED(hr)){
                     //
+                    unsigned int bytesPerPixel;
+                    int width;
+                    int height;
+                    colorDesc->get_BytesPerPixel(&bytesPerPixel);
+                    colorDesc->get_Height(&height);
+                    colorDesc->get_Width(&width);
+                    colorBuffer = new QVector<BYTE>(height * width * bytesPerPixel);
+
+                    emit _readerChanged(true, SOURCE_TYPE::COLOR);
                 }else{
                     emit _hrError(hr);
                     colorReader = NULL;
@@ -183,13 +221,14 @@ void KLController::run()
                 KLComPtr<IColorFrame> colorFrame;
                 hr = colorReader->AcquireLatestFrame(&colorFrame);
                 if(SUCCEEDED(hr)){
-
+                    colorFrame->CopyConvertedFrameDataToArray(colorBuffer->size(), (colorBuffer->data()), ColorImageFormat::ColorImageFormat_Rgba);
+                    emit _data(colorBuffer, SOURCE_TYPE::COLOR);
                 }else{
-                    emit _hrError(hr);
+                    emit _hrError(hr); //TODO: check performance
                 }
             }
         }else if(colorReader){
-            //release colorsource
+            emit _readerChanged(false, SOURCE_TYPE::COLOR);
             safeRelease(colorReader);
             safeRelease(colorDesc);
         }
