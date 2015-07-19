@@ -2,6 +2,7 @@
 
 KLController::KLController():
     sensor(NULL),
+    fps(30),
     isStop(true),
     sourceMarker(SOURCE_TYPE::NONE),
     colorReader(NULL),
@@ -13,13 +14,19 @@ KLController::KLController():
     checkThread->setCheckInterval(300);
     connect(checkThread, SIGNAL(_connect(bool)), this, SLOT(h_connect(bool)));
     connect(checkThread, SIGNAL(_hrError(HRESULT)), this, SLOT(__hrError(HRESULT)));
-
 }
 
 KLController &KLController::getInstance()
 {
     static KLController instance;
     return instance;
+}
+
+void KLController::setPollingRate(int fps)
+{
+    if(fps > 0){
+        this->fps = fps;
+    }
 }
 
 void KLController::stop()
@@ -69,6 +76,13 @@ void KLController::open()
             checkThread->start();
             qDebug()<<"[KLController] Opened";
             emit _open(true);
+            if(isAvailable()){
+                qDebug()<<"[KLController] Connected";
+                emit _available(true);
+            }else{
+                qDebug()<<"[KLController] Disconnected";
+                emit _available(false);
+            }
         }else{
             emit _hrError(hr);
         }
@@ -79,6 +93,10 @@ void KLController::open()
 
 void KLController::startStream(int source)
 {
+    if(isRunning()){
+        emit _readerInfo(true, sourceMarker);
+        emit _readerInfo(false, 0xFFF ^ sourceMarker);
+    }
     if(source >= 0){
         sourceMarker = source;
     }
@@ -101,7 +119,7 @@ const IColorFrameReader *KLController::getReader(int source)
     return NULL;
 }
 
-const IFrameDescription *KLController::getFrameDesc(int source)
+IFrameDescription *KLController::getFrameDesc(int source)
 {
     if(source == SOURCE_TYPE::COLOR){
         return colorDesc;
@@ -211,7 +229,7 @@ void KLController::run()
                     colorDesc->get_Width(&width);
                     colorBuffer = new QVector<BYTE>(height * width * bytesPerPixel);
 
-                    emit _readerChanged(true, SOURCE_TYPE::COLOR);
+                    emit _readerInfo(true, SOURCE_TYPE::COLOR);
                 }else{
                     emit _hrError(hr);
                     colorReader = NULL;
@@ -224,13 +242,15 @@ void KLController::run()
                     colorFrame->CopyConvertedFrameDataToArray(colorBuffer->size(), (colorBuffer->data()), ColorImageFormat::ColorImageFormat_Rgba);
                     emit _data(colorBuffer, SOURCE_TYPE::COLOR);
                 }else{
-                    emit _hrError(hr); //TODO: check performance
+                    emit _hrError(hr);
                 }
             }
         }else if(colorReader){
-            emit _readerChanged(false, SOURCE_TYPE::COLOR);
+            emit _readerInfo(false, SOURCE_TYPE::COLOR);
             safeRelease(colorReader);
             safeRelease(colorDesc);
         }
+
+        usleep(floor((1.0 / fps) * 1000 * 1000));
     }
 }

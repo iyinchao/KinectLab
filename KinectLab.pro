@@ -56,4 +56,5 @@ RESOURCES += \
     kinectlab.qrc
 
 OTHER_FILES += \
-    README.md
+    README.md \
+    TODO.md

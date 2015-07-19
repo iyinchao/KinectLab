@@ -67,6 +67,13 @@ void KinectLab::setUI(QWidget *widget)
     ui_mainLt->addWidget(widget, 0, 0, 1, 1);
 }
 
+void KinectLab::closeEvent(QCloseEvent *event)
+{
+    KLController::getInstance().stop();
+    KLController::getInstance().wait();
+    event->accept();
+}
+
 void KinectLab::initUI()
 {
     /* init menu */

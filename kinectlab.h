@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QIcon>
 #include <QAction>
+#include <QCloseEvent>
 
 #include "klcontroller.h"
 #include "klctrlpanel.h"
@@ -27,6 +28,9 @@ public slots:
     void h_moduleSetTitle(const QString& string, int target);
     void h_moduleSetUI(QWidget* widget, int target);
     void setUI(QWidget* widget);
+
+protected:
+    void closeEvent(QCloseEvent *event);
 
 private:
     /* functions */

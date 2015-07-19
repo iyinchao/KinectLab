@@ -24,13 +24,14 @@ public:
         MULTI = 0x80
     };
     static KLController& getInstance();
+    void setPollingRate(int fps);
     void stop();
     void close();
     void open();
     void startStream(int source = -1);
     void stopStream();
     const IColorFrameReader* getReader(int source);
-    const IFrameDescription* getFrameDesc(int source);
+    IFrameDescription *getFrameDesc(int source);
     const int getSourceMarker();
     bool isOpened();
     bool isAvailable();
@@ -48,7 +49,7 @@ signals:
     void _open(bool);
     void _available(bool);
     void _hrError(HRESULT);
-    void _readerChanged(bool, unsigned int);
+    void _readerInfo(bool, unsigned int);
     void _stream(bool);
     void _data(void*, unsigned int);
 
@@ -62,6 +63,7 @@ private:
      KLController& operator=(KLController const&);
 
      /* members */
+     int fps;
      bool isStop;
      IKinectSensor* sensor;
      KLCheckThread* checkThread;
@@ -70,8 +72,6 @@ private:
      IColorFrameReader* colorReader;
      IFrameDescription* colorDesc;
      QVector<BYTE>* colorBuffer;
-
-
 };
 
 #endif // KLCONTROLLER_H
