@@ -9,8 +9,10 @@ class KL2DView : public QWidget
 {
     Q_OBJECT
 public:
-    explicit KL2DView(QWidget *parent = 0);
+    explicit KL2DView(int id = 0, QWidget *parent = 0);
     void setModule(KLMBase* module);
+    void setId(int id);
+    const int getId();
 
 protected:
     void paintEvent(QPaintEvent* event);
@@ -21,6 +23,7 @@ public slots:
 
 private:
     KLMBase* module;
+    int id;
 
 };
 

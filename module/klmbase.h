@@ -10,6 +10,7 @@
 
 #include "../klcontroller.h"
 #include "../kl2dview.h"
+#include "../klglview.h"
 
 class KLMBase : public QWidget
 {
@@ -28,7 +29,9 @@ signals:
 
 public slots:
     virtual void init();
-    virtual void paint2D(KL2DView* target, QPainter *painter, QPaintEvent *event);
+    virtual void paint2D(int targetID, QPainter *painter, QPaintEvent *event);
+    virtual void paintGL2D(int targetID, QPainter* painter, QPaintEvent* event);
+    virtual void paintGL3D(int targetID);
 
 protected:
 

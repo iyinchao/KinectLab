@@ -12,7 +12,8 @@ public:
 
 public slots:
     void init();
-    void paint2D(KL2DView *target, QPainter *painter, QPaintEvent *event);
+    void paint2D(int targetID, QPainter *painter, QPaintEvent *event);
+    void paintGL2D(int targetID, QPainter *painter, QPaintEvent *event);
 
     void h_kinectReaderInfo(bool exist, uint type);
     void h_kinectAvailable(bool available);
@@ -22,6 +23,7 @@ private:
     void initUI();
 
     KL2DView* ui_2DView;
+    KLGLView* ui_RGBView;
     QImage colorImage;
 
     int colorHeight;

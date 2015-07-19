@@ -95,7 +95,7 @@ void KLController::startStream(int source)
 {
     if(isRunning()){
         emit _readerInfo(true, sourceMarker);
-        emit _readerInfo(false, 0xFFF ^ sourceMarker);
+        emit _readerInfo(false, SOURCE_TYPE::ALL ^ sourceMarker);
     }
     if(source >= 0){
         sourceMarker = source;
@@ -250,6 +250,11 @@ void KLController::run()
             safeRelease(colorReader);
             safeRelease(colorDesc);
         }
+//        if(sourceMarker & SOURCE_TYPE::BASIC_FACE){
+
+//        }else if(){
+
+//        }
 
         usleep(floor((1.0 / fps) * 1000 * 1000));
     }

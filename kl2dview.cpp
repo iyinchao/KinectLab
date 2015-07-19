@@ -1,8 +1,10 @@
 #include "kl2dview.h"
 #include "module/klmbase.h"
 
-KL2DView::KL2DView(QWidget *parent):
-    QWidget(parent)
+KL2DView::KL2DView(int id, QWidget *parent):
+    QWidget(parent),
+    module(NULL),
+    id(id)
 {
    // this->setFixedSize(200,200);
 }
@@ -10,6 +12,16 @@ KL2DView::KL2DView(QWidget *parent):
 void KL2DView::setModule(KLMBase *module)
 {
     this->module = module;
+}
+
+void KL2DView::setId(int id)
+{
+    this->id = id;
+}
+
+const int KL2DView::getId()
+{
+    return id;
 }
 
 void KL2DView::paintEvent(QPaintEvent *event)
@@ -27,6 +39,6 @@ void KL2DView::paintEvent(QPaintEvent *event)
 //            }
 //        }
 //    }
-    module->paint2D(this, &painter, event);
+    module->paint2D(id, &painter, event);
     painter.end();
 }

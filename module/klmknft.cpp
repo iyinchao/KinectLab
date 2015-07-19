@@ -31,10 +31,25 @@ void KLMKnft::init()
     }
 }
 
-void KLMKnft::paint2D(KL2DView *target, QPainter *painter, QPaintEvent *event)
+void KLMKnft::paint2D(int targetID, QPainter *painter, QPaintEvent *event)
 {
-    if(colorImage.height()){
-        painter->drawPixmap(0,0, QPixmap::fromImage(colorImage));
+    switch(targetID){
+    case 0:
+        if(colorImage.height()){
+            painter->drawPixmap(0,0, QPixmap::fromImage(colorImage));
+        }
+        break;
+    }
+}
+
+void KLMKnft::paintGL2D(int targetID, QPainter *painter, QPaintEvent *event)
+{
+    switch(targetID){
+    case 0:
+//        if(colorImage.height()){
+//            painter->drawPixmap(0,0, QPixmap::fromImage(colorImage));
+//        }
+        break;
     }
 }
 
@@ -67,21 +82,22 @@ void KLMKnft::h_kinectData(void *data, uint type)
 {
     if(type & KLController::SOURCE_TYPE::COLOR){
         const QVector<BYTE>* data_ptr = ((QVector<BYTE> *)data);
+//        colorImage = QImage(data_ptr->data(), 1920, 1080, QImage::Format_RGBA8888_Premultiplied).scaledToHeight(ui_RGBView->height());
+//        ui_RGBView->update();
         colorImage = QImage(data_ptr->data(), 1920, 1080, QImage::Format_RGBA8888_Premultiplied).scaledToHeight(ui_2DView->height());
-
-        //colorImage->fromData((const uchar *)(data_ptr->data()), data_ptr->size(), QImage::Format_RGBA8888);
         ui_2DView->update();
-       //colorImage = new
     }
 }
 
 void KLMKnft::initUI()
 {
     KLMBase::initUI();
-    ui_2DView = new KL2DView(ui_mainWgt);
+    ui_2DView = new KL2DView(0, ui_mainWgt);
     ui_2DView->setModule(this);
     ui_mainLt->addWidget(ui_2DView, 0,0,1,1);
-    //ui_mainLt->addWidget(new QPushButton(tr("sdfgsdfgsdf")), 0,0,1,1);
+//    ui_RGBView = new KLGLView(0, ui_mainWgt);
+//    ui_RGBView->setModule(this);
+//    ui_mainLt->addWidget(ui_RGBView, 0,0,1,1);
 }
 
 

@@ -22,7 +22,17 @@ void KLMBase::init()
     //emit _setUI(ui_ctrlPanelWgt, WINDOW::MAIN);
 }
 
-void KLMBase::paint2D(KL2DView *target, QPainter *painter, QPaintEvent *event)
+void KLMBase::paint2D(int targetID, QPainter *painter, QPaintEvent *event)
+{
+
+}
+
+void KLMBase::paintGL2D(int targetID, QPainter *painter, QPaintEvent *event)
+{
+
+}
+
+void KLMBase::paintGL3D(int targetID)
 {
 
 }

@@ -2,27 +2,32 @@
 #define KLCONTROLLER_H
 
 #include <QThread>
+#include <QVector2D>
 #include "Kinect.h"
+#include "Kinect.Face.h"
+#include <QDebug>
+
 #include "klcheckthread.h"
 #include "klcommon.h"
-#include <QDebug>
-#include <QVector2D>
 
 class KLController: public QThread
 {
     Q_OBJECT
 public:
     enum SOURCE_TYPE{
-        NONE = 0x00,
-        COLOR = 0x01,
-        AUDIO = 0x02,
-        BODY = 0x04,
-        BODY_INDEX = 0x08,
+        NONE = 0x0,
+        COLOR = 0x1,
+        AUDIO = 0x2,
+        BODY = 0x4,
+        BODY_INDEX = 0x8,
         DEPTH = 0x10,
         INFRARED = 0x20,
         LONG_EXPOSURE_INFRARED = 0x40,
-        MULTI = 0x80
+        MULTI = 0x80,
+        FACE_ALIGNMENT = 0x100,
+        ALL = 0xFFF
     };
+
     static KLController& getInstance();
     void setPollingRate(int fps);
     void stop();
@@ -72,6 +77,12 @@ private:
      IColorFrameReader* colorReader;
      IFrameDescription* colorDesc;
      QVector<BYTE>* colorBuffer;
+     /* basic face */
+     //TODO get to know what is IFaceAlignment
+     IFaceFrameReader* faceReader;
+
+
+
 };
 
 #endif // KLCONTROLLER_H
