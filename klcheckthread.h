@@ -27,7 +27,6 @@ public slots:
     void h_started();
     void h_finished();
 
-
 private:
     bool lastCheck;
     bool isRelease;

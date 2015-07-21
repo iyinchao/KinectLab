@@ -7,6 +7,7 @@
 #include <QBrush>
 #include <QFont>
 #include <QPen>
+#include <QSharedMemory>
 
 #include "../klcontroller.h"
 #include "../kl2dview.h"
@@ -46,6 +47,8 @@ protected:
     KLController *ctrler;
 
     void initUI();
+
+    QSharedMemory* sharedMemory[BODY_COUNT];
 
 };
 

@@ -4,10 +4,30 @@ KLController::KLController():
     sensor(NULL),
     fps(30),
     isStop(true),
-    sourceMarker(SOURCE_TYPE::NONE),
+    sourceMarker(SOURCE_TYPE::S_NONE),
+    coordMapper(NULL),
     colorReader(NULL),
-    colorBuffer(NULL)
+    colorDesc(NULL),
+    colorBuffer(NULL),
+    colorBytesPerPixel(0),
+    colorWidth(0),
+    colorHeight(0)
+
 {
+    for(int i = 0; i < BODY_COUNT; i++){
+        faceHDReaders[i] = NULL;
+        faceHDSources[i] = NULL;
+        faceHDFrames[i] = NULL;
+        faceAlignments[i] = NULL;
+        faceAlignmentsInColorSpace[i] = NULL;
+        faceModels[i] = NULL;
+        faceModelVCs[i] = 0;
+        faceData[i] = new KLFaceData();
+        bodies[i] = NULL;
+        sharedMemory[i] = new QSharedMemory(alignmentInColorSpace_key + i, this);
+    }
+
+
     connect(this, SIGNAL(started()), this, SLOT(h_started()));
     connect(this, SIGNAL(finished()), this, SLOT(h_finished()));
     checkThread = new KLCheckThread(sensor);
@@ -71,20 +91,25 @@ void KLController::open()
     HRESULT hr = GetDefaultKinectSensor(&sensor);
     if(SUCCEEDED(hr)){
         hr = sensor->Open();
-        if(SUCCEEDED(hr)){
-            checkThread->setSensor(sensor);
-            checkThread->start();
-            qDebug()<<"[KLController] Opened";
-            emit _open(true);
-            if(isAvailable()){
-                qDebug()<<"[KLController] Connected";
-                emit _available(true);
-            }else{
-                qDebug()<<"[KLController] Disconnected";
-                emit _available(false);
-            }
+    }else{
+        emit _hrError(hr);
+    }
+    if(SUCCEEDED(hr)){
+        hr = sensor->get_CoordinateMapper(&coordMapper);
+    }else{
+        emit _hrError(hr);
+    }
+    if(SUCCEEDED(hr)){
+        checkThread->setSensor(sensor);
+        checkThread->start();
+        qDebug()<<"[KLController] Opened";
+        emit _open(true);
+        if(isAvailable()){
+            qDebug()<<"[KLController] Connected";
+            emit _available(true);
         }else{
-            emit _hrError(hr);
+            qDebug()<<"[KLController] Disconnected";
+            emit _available(false);
         }
     }else{
         emit _hrError(hr);
@@ -95,7 +120,7 @@ void KLController::startStream(int source)
 {
     if(isRunning()){
         emit _readerInfo(true, sourceMarker);
-        emit _readerInfo(false, SOURCE_TYPE::ALL ^ sourceMarker);
+        emit _readerInfo(false, SOURCE_TYPE::S_ALL ^ sourceMarker);
     }
     if(source >= 0){
         sourceMarker = source;
@@ -109,27 +134,6 @@ void KLController::stopStream()
 {
     this->stop();
     this->wait();
-}
-
-const IColorFrameReader *KLController::getReader(int source)
-{
-    if(source == SOURCE_TYPE::COLOR){
-        return colorReader;
-    }
-    return NULL;
-}
-
-IFrameDescription *KLController::getFrameDesc(int source)
-{
-    if(source == SOURCE_TYPE::COLOR){
-        return colorDesc;
-    }
-    return NULL;
-}
-
-const int KLController::getSourceMarker()
-{
-    return sourceMarker;
 }
 
 bool KLController::isOpened()
@@ -164,6 +168,34 @@ IKinectSensor *KLController::getSensor()
     return sensor;
 }
 
+const ICoordinateMapper *KLController::getCoordMapper()
+{
+    return coordMapper;
+}
+
+const IColorFrameReader *KLController::getReader(int source)
+{
+    if(source == SOURCE_TYPE::S_COLOR){
+        return colorReader;
+    }
+    return NULL;
+}
+
+IFrameDescription *KLController::getFrameDesc(int source)
+{
+    if(source == SOURCE_TYPE::S_COLOR){
+        return colorDesc;
+    }
+    return NULL;
+}
+
+const int KLController::getSourceMarker()
+{
+    return sourceMarker;
+}
+
+/* slots */
+
 void KLController::__hrError(HRESULT hr)
 {
     emit _hrError(hr);
@@ -187,6 +219,7 @@ void KLController::h_finished()
     isStop = true;
 }
 
+
 void KLController::run()
 {
     isStop = false;
@@ -195,13 +228,16 @@ void KLController::run()
             break; //Not continue, otherwise it will still use cpu
         }
         HRESULT hr;
-        if(sourceMarker == SOURCE_TYPE::NONE){
+        if(sourceMarker == SOURCE_TYPE::S_NONE){
             break;
         }
-        if(sourceMarker == SOURCE_TYPE::MULTI){
+
+        if(sourceMarker == SOURCE_TYPE::S_MULTI){
             continue;
         }
-        if(sourceMarker & SOURCE_TYPE::COLOR){
+
+        /* color source */
+        if(sourceMarker & SOURCE_TYPE::S_COLOR){
             if(!colorReader){
                 KLComPtr<IColorFrameSource> colorSource;
                 hr = sensor->get_ColorFrameSource(&colorSource);
@@ -221,15 +257,12 @@ void KLController::run()
                 }
                 if(SUCCEEDED(hr)){
                     //
-                    unsigned int bytesPerPixel;
-                    int width;
-                    int height;
-                    colorDesc->get_BytesPerPixel(&bytesPerPixel);
-                    colorDesc->get_Height(&height);
-                    colorDesc->get_Width(&width);
-                    colorBuffer = new QVector<BYTE>(height * width * bytesPerPixel);
+                    colorDesc->get_BytesPerPixel(&colorBytesPerPixel);
+                    colorDesc->get_Height(&colorHeight);
+                    colorDesc->get_Width(&colorWidth);
+                    colorBuffer = new QVector<BYTE>(colorHeight * colorWidth * colorBytesPerPixel);
 
-                    emit _readerInfo(true, SOURCE_TYPE::COLOR);
+                    emit _readerInfo(true, SOURCE_TYPE::S_COLOR);
                 }else{
                     emit _hrError(hr);
                     colorReader = NULL;
@@ -240,22 +273,156 @@ void KLController::run()
                 hr = colorReader->AcquireLatestFrame(&colorFrame);
                 if(SUCCEEDED(hr)){
                     colorFrame->CopyConvertedFrameDataToArray(colorBuffer->size(), (colorBuffer->data()), ColorImageFormat::ColorImageFormat_Rgba);
-                    emit _data(colorBuffer, SOURCE_TYPE::COLOR);
+                    emit _data(colorBuffer, RESOURCE_TYPE::R_COLOR);
                 }else{
                     emit _hrError(hr);
                 }
             }
         }else if(colorReader){
-            emit _readerInfo(false, SOURCE_TYPE::COLOR);
             safeRelease(colorReader);
             safeRelease(colorDesc);
+            emit _readerInfo(false, SOURCE_TYPE::S_COLOR);
         }
-//        if(sourceMarker & SOURCE_TYPE::BASIC_FACE){
 
-//        }else if(){
+        /* body source */
+        if(sourceMarker & SOURCE_TYPE::S_BODY){
+            if(!bodyReader){
+                KLComPtr<IBodyFrameSource> bodySource;
+                hr = sensor->get_BodyFrameSource(&bodySource);
+                if(SUCCEEDED(hr)){
+                    safeRelease(bodyReader);
+                    hr = bodySource->OpenReader(&bodyReader);
+                }else{
+                    emit _hrError(hr);
+                    safeRelease(bodyReader);
+                }
 
-//        }
+                if(SUCCEEDED(hr)){
+                    emit _readerInfo(true, SOURCE_TYPE::S_BODY);
+                }else{
+                    emit _hrError(hr);
+                    safeRelease(bodyReader);
+                }
+            }
+            if(bodyReader){
+                KLComPtr<IBodyFrame> bodyFrame;
+                hr = bodyReader->AcquireLatestFrame(&bodyFrame);
+                if(SUCCEEDED(hr)){
+                    hr = bodyFrame->GetAndRefreshBodyData(_countof(bodies), bodies);
+                }else{
+                    emit _hrError(hr);
+                }
+            }
+        }else if(bodyReader){
+            safeRelease(bodyReader);
+            for(int i = 0; i < BODY_COUNT; i++){
+                safeRelease(bodies[i]);
+            }
+            emit _readerInfo(false, SOURCE_TYPE::S_BODY);
+        }
+
+        /* face source */
+        if(sourceMarker & SOURCE_TYPE::S_FACE_HD){
+            for(int i = 0; i < BODY_COUNT; i++){
+                faceData[i]->reset();
+            }
+            if(!faceHDReaders[0]){
+                bool hasError = false;
+                for(int i = 0; i < BODY_COUNT; i++){
+                    hr = CreateHighDefinitionFaceFrameSource(sensor, &faceHDSources[i]);
+                    if(SUCCEEDED(hr)){
+                        safeRelease(faceHDReaders[i]);
+                        hr = faceHDSources[i]->OpenReader(&faceHDReaders[i]);
+                    }else{
+                        hasError = true;
+                        break;
+                    }
+                    if(SUCCEEDED(hr)){
+                        continue;
+                        //emit _readerInfo(true, SOURCE_TYPE::S_FACE_HD);
+                    }else{
+                        hasError = true;
+                        break;
+                    }
+                }
+                if(hasError){
+                    for(int i = 0; i < BODY_COUNT; i++){
+                        safeRelease(faceHDReaders[i]);
+                        safeRelease(faceHDSources[i]);
+                    }
+                    emit _hrError(hr);
+                }else{
+                    emit _readerInfo(true, SOURCE_TYPE::S_FACE_HD);
+                }
+            }
+
+            if(faceHDReaders[0]){
+
+                bool hasValidFaceTrack = false;
+
+                for(int i = 0; i < BODY_COUNT; i++){
+                    BOOLEAN isFaceTracked = false;
+                    hr = faceHDReaders[i]->AcquireLatestFrame(&faceHDFrames[i]);
+                    if(SUCCEEDED(hr)){
+                        //qDebug()<<"huuray!!";
+                        hr = faceHDFrames[i]->get_IsTrackingIdValid(&isFaceTracked);
+                    }
+                    if(SUCCEEDED(hr)){
+                        faceData[i]->frameHD = faceHDFrames[i];
+                        faceData[i]->sourceHD = faceHDSources[i];
+                        faceData[i]->readerHD = faceHDReaders[i];
+                        faceData[i]->index = i;
+                    }
+
+                    if(!isFaceTracked){
+                        safeRelease(faceHDFrames[i]);
+                        faceData[i]->isValid = false;
+
+                        if(bodyReader){
+                            if(bodies[i] != NULL){
+                                BOOLEAN isBodyTracked = false;
+                                hr = bodies[i]->get_IsTracked(&isBodyTracked);
+                                if(SUCCEEDED(hr)){
+                                    if(isBodyTracked){
+                                        UINT64 bodyID;
+                                        hr = bodies[i]->get_TrackingId(&bodyID);
+                                        if(SUCCEEDED(hr)){
+                                            faceHDSources[i]->put_TrackingId(bodyID);
+                                            faceData[i]->trackID = bodyID;
+                                        }
+                                    }
+                                }
+                            }
+                        }else{
+                            // open body source
+                            sourceMarker |= SOURCE_TYPE::S_BODY;
+                        }
+                    }else{
+                        hasValidFaceTrack = true;
+                        faceData[i]->isValid = true;
+                    }
+                }
+
+                if(hasValidFaceTrack){
+                    emit _data(faceData, RESOURCE_TYPE::R_FACE_HD);
+                }
+            }
+        }else if(faceHDReaders[0]){
+            for(int i = 0; i < BODY_COUNT; i++){
+                safeRelease(faceHDReaders[i]);
+                safeRelease(faceHDFrames[i]);
+                safeRelease(faceHDSources[i]);
+                safeRelease(faceAlignments[i]);
+                safeRelease(faceModels[i]);
+                if(faceAlignmentsInColorSpace[i])
+                    delete faceAlignmentsInColorSpace[i];
+                faceData[i]->reset();
+            }
+            emit _readerInfo(false, SOURCE_TYPE::S_FACE_HD);
+        }
 
         usleep(floor((1.0 / fps) * 1000 * 1000));
+
+        emit _pulse();
     }
 }

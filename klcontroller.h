@@ -6,26 +6,69 @@
 #include "Kinect.h"
 #include "Kinect.Face.h"
 #include <QDebug>
+#include <iostream>
+#include <QSharedMemory>
 
 #include "klcheckthread.h"
 #include "klcommon.h"
+
+struct KLFaceData{
+    KLFaceData()
+    {
+        reset();
+    }
+    void reset(){
+        isValid =  false;
+        sourceHD = NULL;
+        readerHD = NULL;
+        frameHD = NULL;
+        modelVC = 0;
+        alignment = NULL;
+        model = NULL;
+        alignmentInColorSpace = NULL;
+        index = 0;
+        trackID = 0;
+    }
+    int index;
+    int trackID;
+    bool isValid;
+    IHighDefinitionFaceFrameSource* sourceHD;
+    IHighDefinitionFaceFrameReader* readerHD;
+    IHighDefinitionFaceFrame* frameHD;
+    IFaceModel* model;
+    UINT32 modelVC;
+    IFaceAlignment* alignment;
+    ColorSpacePoint* alignmentInColorSpace;
+};
 
 class KLController: public QThread
 {
     Q_OBJECT
 public:
     enum SOURCE_TYPE{
-        NONE = 0x0,
-        COLOR = 0x1,
-        AUDIO = 0x2,
-        BODY = 0x4,
-        BODY_INDEX = 0x8,
-        DEPTH = 0x10,
-        INFRARED = 0x20,
-        LONG_EXPOSURE_INFRARED = 0x40,
-        MULTI = 0x80,
-        FACE_ALIGNMENT = 0x100,
-        ALL = 0xFFF
+        S_NONE = 0x0,
+        S_COLOR = 0x1,
+        S_AUDIO = 0x2,
+        S_BODY = 0x4,
+        S_BODY_INDEX = 0x8,
+        S_DEPTH = 0x10,
+        S_INFRARED = 0x20,
+        S_LONG_EXPOSURE_INFRARED = 0x40,
+        S_MULTI = 0x80,
+        S_FACE_HD = 0x100,
+        S_FACE = 0x400,
+        S_ALL = 0xFFF
+    };
+    enum RESOURCE_TYPE {
+        R_NONE = 0x0,
+        R_COLOR = 0x1,
+        R_AUDIO = 0x2,
+        R_BODY = 0x4,
+        R_BODY_INDEX = 0x8,
+        R_DEPTH = 0x10,
+        R_INFRARED = 0x20,
+        R_LONG_EXPOSURE_INFRARED = 0x40,
+        R_FACE_HD = 0x1000,
     };
 
     static KLController& getInstance();
@@ -35,12 +78,15 @@ public:
     void open();
     void startStream(int source = -1);
     void stopStream();
-    const IColorFrameReader* getReader(int source);
-    IFrameDescription *getFrameDesc(int source);
-    const int getSourceMarker();
     bool isOpened();
     bool isAvailable();
     IKinectSensor* getSensor();
+
+    const ICoordinateMapper* getCoordMapper();
+
+    const IColorFrameReader* getReader(int source);
+    IFrameDescription *getFrameDesc(int source);
+    const int getSourceMarker();
 
 public slots:
     /* adapter slots */
@@ -57,31 +103,55 @@ signals:
     void _readerInfo(bool, unsigned int);
     void _stream(bool);
     void _data(void*, unsigned int);
+    void _pulse();
 
 protected:
-     void run();
+    void run();
 
 private:
-     /* constructors */
-     KLController();
-     KLController(KLController const&);
-     KLController& operator=(KLController const&);
+    /* constructors */
+    KLController();
+    KLController(KLController const&);
+    KLController& operator=(KLController const&);
 
-     /* members */
-     int fps;
-     bool isStop;
-     IKinectSensor* sensor;
-     KLCheckThread* checkThread;
+    /* members */
+    int fps;
+    bool isStop;
+    IKinectSensor* sensor;
+    KLCheckThread* checkThread;
 
-     unsigned int sourceMarker;
-     IColorFrameReader* colorReader;
-     IFrameDescription* colorDesc;
-     QVector<BYTE>* colorBuffer;
-     /* basic face */
-     //TODO get to know what is IFaceAlignment
-     IFaceFrameReader* faceReader;
+    ICoordinateMapper* coordMapper;
+    unsigned int sourceMarker;
+
+    IColorFrameReader* colorReader;
+    IFrameDescription* colorDesc;
+    int colorWidth;
+    int colorHeight;
+    UINT colorBytesPerPixel;
+    QVector<BYTE>* colorBuffer;
+
+    IFaceFrameReader* faceReaders[BODY_COUNT];
+
+    IDepthFrameReader* depthReader;
+
+    IBodyFrameReader* bodyReader;
+    IBody* bodies[BODY_COUNT];
+    /* HD face */
+    IHighDefinitionFaceFrameSource* faceHDSources[BODY_COUNT];
+    IHighDefinitionFaceFrameReader* faceHDReaders[BODY_COUNT];
+    IHighDefinitionFaceFrame* faceHDFrames[BODY_COUNT];
+    IFaceAlignment* faceAlignments[BODY_COUNT];
+    ColorSpacePoint* faceAlignmentsInColorSpace[BODY_COUNT];
+    IFaceModel* faceModels[BODY_COUNT];
+    UINT32 faceModelVCs[BODY_COUNT];
+    KLFaceData* faceData[BODY_COUNT];
+
+    //IHighDefinitionFaceFrameSource* faceHDSouc
 
 
+
+    const char* alignmentInColorSpace_key = "alignmentInColorSpace";
+    QSharedMemory *sharedMemory[BODY_COUNT];
 
 };
 

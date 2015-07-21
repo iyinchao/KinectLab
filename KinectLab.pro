@@ -60,4 +60,5 @@ RESOURCES += \
 
 OTHER_FILES += \
     README.md \
-    TODO.md
+    TODO.md \
+    CODE.md
