@@ -23,8 +23,8 @@ KLController::KLController():
         faceModels[i] = NULL;
         faceModelVCs[i] = 0;
         faceData[i] = new KLFaceData();
+        faceData[i]->trackID = 0;
         bodies[i] = NULL;
-        sharedMemory[i] = new QSharedMemory(alignmentInColorSpace_key + i, this);
     }
 
 
@@ -41,6 +41,15 @@ KLController &KLController::getInstance()
     static KLController instance;
     return instance;
 }
+
+const QColor* KLController::bodyColors[BODY_COUNT] =  {
+    new QColor("red"),
+    new QColor("orange"),
+    new QColor("yellow"),
+    new QColor("green"),
+    new QColor("blue"),
+    new QColor("plum")
+};
 
 void KLController::setPollingRate(int fps)
 {
@@ -168,7 +177,15 @@ IKinectSensor *KLController::getSensor()
     return sensor;
 }
 
-const ICoordinateMapper *KLController::getCoordMapper()
+const QColor *KLController::getBodyColor(int body_index)
+{
+    if(body_index >=0 && body_index <= BODY_COUNT){
+        return bodyColors[body_index];
+    }
+    return bodyColors[0];
+}
+
+ ICoordinateMapper *KLController::getCoordMapper()
 {
     return coordMapper;
 }
@@ -362,48 +379,55 @@ void KLController::run()
 
                 for(int i = 0; i < BODY_COUNT; i++){
                     BOOLEAN isFaceTracked = false;
-                    hr = faceHDReaders[i]->AcquireLatestFrame(&faceHDFrames[i]);
-                    if(SUCCEEDED(hr)){
-                        //qDebug()<<"huuray!!";
-                        hr = faceHDFrames[i]->get_IsTrackingIdValid(&isFaceTracked);
-                    }
-                    if(SUCCEEDED(hr)){
-                        faceData[i]->frameHD = faceHDFrames[i];
-                        faceData[i]->sourceHD = faceHDSources[i];
-                        faceData[i]->readerHD = faceHDReaders[i];
-                        faceData[i]->index = i;
-                    }
 
-                    if(!isFaceTracked){
-                        safeRelease(faceHDFrames[i]);
-                        faceData[i]->isValid = false;
+                    QMutex mutex;
+                    if(mutex.tryLock()){
+                        //faceData[i]->frameHD = NULL;
+                        hr = faceHDReaders[i]->AcquireLatestFrame(&faceHDFrames[i]);
 
-                        if(bodyReader){
-                            if(bodies[i] != NULL){
-                                BOOLEAN isBodyTracked = false;
-                                hr = bodies[i]->get_IsTracked(&isBodyTracked);
-                                if(SUCCEEDED(hr)){
-                                    if(isBodyTracked){
-                                        UINT64 bodyID;
-                                        hr = bodies[i]->get_TrackingId(&bodyID);
-                                        if(SUCCEEDED(hr)){
-                                            faceHDSources[i]->put_TrackingId(bodyID);
-                                            faceData[i]->trackID = bodyID;
+                        if(SUCCEEDED(hr)){
+                            //qDebug()<<"huuray!!";
+                            hr = faceHDFrames[i]->get_IsTrackingIdValid(&isFaceTracked);
+                        }
+                        if(SUCCEEDED(hr)){
+                            faceData[i]->frameHD = faceHDFrames[i];
+                            faceData[i]->sourceHD = faceHDSources[i];
+                            faceData[i]->readerHD = faceHDReaders[i];
+                            faceData[i]->index = i;
+                        }
+
+                        if(!isFaceTracked){
+                            faceData[i]->isValid = false;
+                            safeRelease(faceHDFrames[i]);
+                            if(bodyReader){
+                                if(bodies[i] != NULL){
+                                    BOOLEAN isBodyTracked = false;
+                                    hr = bodies[i]->get_IsTracked(&isBodyTracked);
+                                    if(SUCCEEDED(hr)){
+                                        if(isBodyTracked){
+                                            UINT64 bodyID;
+                                            hr = bodies[i]->get_TrackingId(&bodyID);
+                                            if(SUCCEEDED(hr)){
+                                                faceHDSources[i]->put_TrackingId(bodyID);
+                                                faceData[i]->trackID = bodyID;
+                                            }
                                         }
                                     }
                                 }
+                            }else{
+                                // open body source
+                                sourceMarker |= SOURCE_TYPE::S_BODY;
                             }
                         }else{
-                            // open body source
-                            sourceMarker |= SOURCE_TYPE::S_BODY;
+                            hasValidFaceTrack = true;
+                            faceData[i]->isValid = true;
                         }
-                    }else{
-                        hasValidFaceTrack = true;
-                        faceData[i]->isValid = true;
+                        mutex.unlock();
                     }
                 }
 
                 if(hasValidFaceTrack){
+                    qDebug()<<"p1";
                     emit _data(faceData, RESOURCE_TYPE::R_FACE_HD);
                 }
             }

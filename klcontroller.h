@@ -3,11 +3,11 @@
 
 #include <QThread>
 #include <QVector2D>
+#include <QColor>
 #include "Kinect.h"
 #include "Kinect.Face.h"
 #include <QDebug>
 #include <iostream>
-#include <QSharedMemory>
 
 #include "klcheckthread.h"
 #include "klcommon.h"
@@ -21,13 +21,13 @@ struct KLFaceData{
         isValid =  false;
         sourceHD = NULL;
         readerHD = NULL;
-        frameHD = NULL;
+        //frameHD = NULL;
         modelVC = 0;
         alignment = NULL;
         model = NULL;
         alignmentInColorSpace = NULL;
         index = 0;
-        trackID = 0;
+        //trackID = 0;
     }
     int index;
     int trackID;
@@ -81,8 +81,9 @@ public:
     bool isOpened();
     bool isAvailable();
     IKinectSensor* getSensor();
+    static const QColor* getBodyColor(int body_index);
 
-    const ICoordinateMapper* getCoordMapper();
+    ICoordinateMapper *getCoordMapper();
 
     const IColorFrameReader* getReader(int source);
     IFrameDescription *getFrameDesc(int source);
@@ -119,6 +120,8 @@ private:
     bool isStop;
     IKinectSensor* sensor;
     KLCheckThread* checkThread;
+    static const QColor* bodyColors[BODY_COUNT];
+
 
     ICoordinateMapper* coordMapper;
     unsigned int sourceMarker;
@@ -147,11 +150,6 @@ private:
     KLFaceData* faceData[BODY_COUNT];
 
     //IHighDefinitionFaceFrameSource* faceHDSouc
-
-
-
-    const char* alignmentInColorSpace_key = "alignmentInColorSpace";
-    QSharedMemory *sharedMemory[BODY_COUNT];
 
 };
 

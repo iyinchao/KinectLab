@@ -18,9 +18,12 @@ void KLMKnft::init()
     colorImage = QImage();
     faceData = NULL;
     for(int i = 0; i < BODY_COUNT; i++){
-        sharedMemory[i] = new QSharedMemory("alignmentInColorSpace"+i, this);
-
+        faceAlignments[i] = NULL;
+        faceAlignmentsInColorSpace[i] = NULL;
+        faceModels[i] = NULL;
     }
+    faceModelVC = 0;
+    inValidFrameCount = 0;
 
     emit _setTitle("Kinect Face Lab - Kinect Native Face Tracker", WINDOW::MAIN);
     emit _setUI(ui_mainWgt, WINDOW::MAIN);
@@ -46,47 +49,31 @@ void KLMKnft::paint2D(int targetID, QPainter *painter, QPaintEvent *event)
             //painter->drawPixmap(0,0, QPixmap::fromImage(colorImage.scaledToHeight(ui_2DView->height())));
             painter->drawPixmap(0,0, QPixmap::fromImage(colorImage.scaledToHeight(ui_2DView->height())));
         }
-//        if(faceData && faceData->isValid && faceData->alignmentInColorSpace){
-//            //qDebug()<<sizeof(*(faceData->alignmentInColorSpace));//faceData->alignmentInColorSpace[4].X;
-//            //qDebug()<<faceAlignmentsInColorSpace[4].X;
-//            QPen pen(QColor("blue"));
-//            pen.setWidth(5);
-//            pen.setCapStyle(Qt::PenCapStyle::RoundCap);
-//            painter->setPen(pen);
-//            for(UINT i = 0; i < faceData->modelVC; i++){
-//                painter->drawPoint(faceData->alignmentInColorSpace[i].X, faceData->alignmentInColorSpace[i].Y);
-//            }
-//        }
 
 
-//        for(int i = 0; i < BODY_COUNT; i++){
-//            if(sharedMemory[i]->attach()){
-//                QPen pen(QColor("blue"));
-//                pen.setWidth(5);
-//                pen.setCapStyle(Qt::RoundCap);
-//                painter->setPen(pen);
-//                double rate = ui_2DView->height() / 1080.0;
+        for(int i = 0; i < BODY_COUNT; i++){
+            QPen pen(*KLController::getBodyColor(i));
+            pen.setWidth(2);
+            pen.setCapStyle(Qt::RoundCap);
+            painter->setPen(pen);
+            double rate = ui_2DView->height() / 1080.0;
 
-//                sharedMemory[i]->lock();
-
-//                const ColorSpacePoint* data_ptr = (static_cast<const ColorSpacePoint *>(sharedMemory[i]->constData()));
-//                if(data_ptr[0].X != -1 && data_ptr[0].Y != -1){
-//                    for(UINT j = 0; j < faceData->modelVC; j++){
-//                        painter->drawPoint(data_ptr[j].X * rate, data_ptr[j].Y * rate);
-//                    }
-//                }
-
-//                sharedMemory[i]->unlock();
-//                sharedMemory[i]->detach();
-//            }
-//        }
-
-
-
-//        if(faceData && faceData->isValid){
-//            int i = faceData->index;
-
-//        }
+            if(faceAlignmentsInColorSpace[i]){
+                for(UINT j = 0; j < faceModelVC; j++){
+                    painter->drawPoint(faceAlignmentsInColorSpace[i][j].X * rate, faceAlignmentsInColorSpace[i][j].Y * rate);
+                }
+                if(faceData && faceData[i] && !faceData[i]->isValid){
+                    inValidFrameCount++;
+                    if(inValidFrameCount > 2){
+                        delete faceAlignmentsInColorSpace[i];
+                        faceAlignmentsInColorSpace[i] = NULL;
+                        inValidFrameCount = 0;
+                    }
+                }
+                //delete faceAlignmentsInColorSpace[i];
+                //faceAlignmentsInColorSpace[i] = NULL;
+            }
+        }
         break;
     }
 }
@@ -134,16 +121,18 @@ void KLMKnft::h_kinectData(void *data, uint type)
         const QVector<BYTE>* data_ptr = ((QVector<BYTE> *)data);
         colorImage = QImage(data_ptr->data(), 1920, 1080, QImage::Format_RGBA8888_Premultiplied);
         ui_2DView->update();
+//        if(type & KLController::RESOURCE_TYPE::R_FACE_HD){
+//            std::cout<<"p2"<<std::endl;
+//        }
+
+
     }
+
     if(type & KLController::RESOURCE_TYPE::R_FACE_HD){
-        faceData = ((KLFaceData *)data);
-        qDebug()<<"ok";
-        GetFaceModelVertexCount(&faceModelVC);
+        faceData = ((KLFaceData **)data);
+
         HRESULT hr;
         for(int i = 0; i < BODY_COUNT; i++){
-            //hr = CreateFaceAlignment()
-        }
-        /*for(int i = 0; i < BODY_COUNT; i++){
             if(!faceAlignments[i]){
                 hr = CreateFaceAlignment(&(faceAlignments[i]));
             }
@@ -151,70 +140,36 @@ void KLMKnft::h_kinectData(void *data, uint type)
                 float sd[FaceShapeDeformations_Count] = {0.0f};
                 hr = CreateFaceModel(1.0f, FaceShapeDeformations::FaceShapeDeformations_Count, sd, &faceModels[i]);
             }
-            if(!faceModelVCs[i]){
-                hr = GetFaceModelVertexCount(&(faceModelVCs[i]));
-            }
-            if(faceData[i]->isValid && faceAlignments[i] && faceModels[i] && faceModelVCs[i]){
-                CameraSpacePoint *v = new CameraSpacePoint[faceModelVCs[i]];
-                hr = faceHDFrames[i]->GetAndRefreshFaceAlignmentResult(faceAlignments[i]);
-                if(SUCCEEDED(hr)){
-                    faceData[i]->alignment = faceAlignments[i];
-                    faceData[i]->modelVC = faceModelVCs[i];
-                    faceData[i]->model = faceModels[i];
-                    faceData[i]->index = i;
-                    hr = faceModels[i]->CalculateVerticesForAlignment(faceAlignments[i], faceModelVCs[i], v);
-                }
-                if(SUCCEEDED(hr)){
+            GetFaceModelVertexCount(&faceModelVC);
 
-                    if(!faceAlignmentsInColorSpace[i]){
-                        faceAlignmentsInColorSpace[i] = new ColorSpacePoint[faceModelVCs[i]];
+            //QMutex mutex;
+            //if(mutex.tryLock()){
+                if(faceData[i]->isValid && faceData[i]->frameHD && faceAlignments[i] && faceModels[i] && faceModelVC){
+                    //qDebug()<<"p2";
+                    CameraSpacePoint *v = new CameraSpacePoint[faceModelVC];
+                    hr = faceData[i]->frameHD->GetAndRefreshFaceAlignmentResult(faceAlignments[i]);
+
+                    if(SUCCEEDED(hr)){
+                        hr = faceModels[i]->CalculateVerticesForAlignment(faceAlignments[i], faceModelVC, v);
                     }
-                    hr = coordMapper->MapCameraPointsToColorSpace(faceModelVCs[i], v, faceModelVCs[i], faceAlignmentsInColorSpace[i]);
-
-
-//                                if(sharedMemory->isAttached()){
-//                                    sharedMemory->detach();
-//                                }
-
-//                                if(sharedMemory->size() == 0){
-//                                    qDebug()<<"df";
-//                                }
-                    if(sharedMemory[i]->create(faceModelVCs[i] * sizeof(ColorSpacePoint))){
-
-                    }else{
-                        //qDebug()<<sharedMemory->errorString();
-                        //qDebug()<<"dfd";
-                        sharedMemory[i]->attach();
+                    if(SUCCEEDED(hr)){
+                        if(!faceAlignmentsInColorSpace[i]){
+                            faceAlignmentsInColorSpace[i] = new ColorSpacePoint[faceModelVC];
+                        }
+                        hr = ctrler->getCoordMapper()->MapCameraPointsToColorSpace(faceModelVC, v, faceModelVC, faceAlignmentsInColorSpace[i]);
+                        std::cout<<"p3"<<" "<<std::hex<<hr<<" "<<i<<std::endl;
                     }
-                    if(sharedMemory[i]->lock()){
-                        ColorSpacePoint* to = static_cast<ColorSpacePoint *>(sharedMemory[i]->data());
-                        memcpy(to, faceAlignmentsInColorSpace[i], faceModelVCs[i] * sizeof(ColorSpacePoint));
-                        sharedMemory[i]->unlock();
-                        emit _data(faceData[i], RESOURCE_TYPE::R_FACE_HD);
-                    }
-
-                    //faceAlignmentsInColorSpace[i]
-                    //faceData[i]->alignmentInColorSpace = faceAlignmentsInColorSpace[i];
-
                     delete v;
+                }
+                //mutex.unlock();
+            //}
 
-                    //qDebug()<<faceAlignmentsInColorSpace[i][2].X;
-                }
-            }else{
-                if(sharedMemory[i]->create(faceModelVCs[i] * sizeof(ColorSpacePoint))){
-
-                }else{
-                    sharedMemory[i]->attach();
-                }
-                if(sharedMemory[i]->lock()){
-                    ColorSpacePoint* to = static_cast<ColorSpacePoint *>(sharedMemory[i]->data());
-                    to[0].X = -1;
-                    to[0].Y = -1;
-                    sharedMemory[i]->unlock();
-                }
-            }
+            //if(faceAlignments && faceAlignments[i])delete faceAlignments[i];
+            //faceAlignments[i] = NULL;
+            //safeRelease(faceAlignments[i]);
+            //safeRelease(faceModels[i]);
+            //safeRelease(faceData[i]->frameHD);
         }
-    */
 
 
         //ui_2DView->update();

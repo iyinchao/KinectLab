@@ -25,9 +25,10 @@ private:
     KL2DView* ui_2DView;
     KLGLView* ui_RGBView;
     QImage colorImage;
-    KLFaceData* faceData;
+    KLFaceData** faceData;
 
     UINT32 faceModelVC;
+    int inValidFrameCount;
     IFaceAlignment* faceAlignments[BODY_COUNT];
     ColorSpacePoint* faceAlignmentsInColorSpace[BODY_COUNT];
     IFaceModel* faceModels[BODY_COUNT];
