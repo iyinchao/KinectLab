@@ -5,17 +5,9 @@ KinectLab::KinectLab(QWidget *parent) :
     m_module(NULL),
     ui_comWgt(NULL)
 {
-//    ui->setupUi(this);
-//    IKinectSensor* m_kinect;
-//    GetDefaultKinectSensor(&m_kinect);
-//    m_kinect->Open();
-    initUI();
-//    BOOLEAN c;
-//    c = false;
 
-    //KLController::getInstance().open();
-    //KLController::getInstance().start();
-    //qDebug()<<KLController::getInstance().getSensor();
+    initUI();
+
 }
 
 KinectLab::~KinectLab()
@@ -32,9 +24,13 @@ void KinectLab::loadModule()
         if(sender() == act_m_knft){
             m_module = new KLMKnft(this, ui_ctrlPanel);
         }
+        if(sender() == act_m_svmc){
+            m_module = new KLMSvmc(this, ui_ctrlPanel);
+        }
 
         connect(m_module, SIGNAL(_setTitle(const QString&,int)), this, SLOT(h_moduleSetTitle(QString, int)));
         connect(m_module, SIGNAL(_setUI(QWidget*,int)), this, SLOT(h_moduleSetUI(QWidget*,int)));
+        //ui_mainWgt->repaint();
 
         m_module->init();
     }
@@ -87,9 +83,10 @@ void KinectLab::initUI()
     ico_menuModule = QIcon(":/image/menu_module");
 
     act_m_knft = new QAction(ico_menuModule, tr("Kinect FaceTrack (Native) Demo"), this);
-//    act_m_knft->setCheckable(true);
+    act_m_svmc = new QAction(ico_menuModule, tr("SVM Smile Cam"), this);
 
     ui_moduleMenu->addAction(act_m_knft);
+    ui_moduleMenu->addAction(act_m_svmc);
 
     setWindowTitle(tr("Kinect Face Lab"));
     ui_mainWgt = new QWidget(this);
@@ -101,5 +98,6 @@ void KinectLab::initUI()
     ui_ctrlPanel->show();
 
     connect(act_m_knft, SIGNAL(triggered()), this, SLOT(loadModule()));
+    connect(act_m_svmc, SIGNAL(triggered()), this, SLOT(loadModule()));
 
 }

@@ -26,6 +26,7 @@ private:
     KLGLView* ui_RGBView;
     QImage colorImage;
     KLFaceData** faceData;
+    QPen pen;
 
     UINT32 faceModelVC;
     int inValidFrameCount;

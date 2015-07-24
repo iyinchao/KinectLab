@@ -83,6 +83,7 @@ void KLCtrlPanel::initUI()
 
 
     //ui_openClosePB->setStyleSheet ("QPushButton{text-align: right}");
+    ui_ctrlGB->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
     ui_ctrlGBLt->addWidget(ui_openClosePB, 0,0,1,1);
 
     ui_rootLt = new QGridLayout(this);

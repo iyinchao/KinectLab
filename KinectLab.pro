@@ -21,7 +21,8 @@ SOURCES += main.cpp \
     module/klmbase.cpp \
     module/klmknft.cpp \
     klglview.cpp \
-    klglutil.cpp
+    klglutil.cpp \
+    module/klmsvmc.cpp
 
 HEADERS  += \
     kinectlab.h \
@@ -33,16 +34,21 @@ HEADERS  += \
     module/klmbase.h \
     module/klmknft.h \
     klglview.h \
-    klglutil.h
+    klglutil.h \
+    module/klmsvmc.h
 
 FORMS    +=
 
 INCLUDEPATH += "C:/Program Files/Microsoft SDKs/Kinect/v2.0_1409/inc"
+INCLUDEPATH += "$$PWD\res\include\libsvm"
 
 DEPENDPATH += "C:/Program Files/Microsoft SDKs/Kinect/v2.0_1409/inc"
+DEPENDPATH += "$$PWD\res\include\libsvm"
 
 LIBS += "C:/Program Files/Microsoft SDKs/Kinect/v2.0_1409/Lib/x64/Kinect20.lib"
 LIBS += "C:/Program Files/Microsoft SDKs/Kinect/v2.0_1409/Lib/x64/Kinect20.Face.lib"
+
+
 
 RC_ICONS = res/main.ico
 #LIBS += -l"C:/Program Files/Microsoft SDKs/Kinect/v2.0_1409/Lib/x86/Kinect20.Face.lib"
@@ -62,3 +68,11 @@ OTHER_FILES += \
     README.md \
     TODO.md \
     CODE.md
+
+CONFIG(debug, debug|release) {
+    LIBS += "$$PWD\res\lib\libsvm\debug\libsvm.lib"
+    message("Debug mode")
+} else {
+    LIBS += "$$PWD\res\lib\libsvm\release\libsvm.lib"
+    message("Release mode")
+}

@@ -18,10 +18,6 @@ KLController::KLController():
         faceHDReaders[i] = NULL;
         faceHDSources[i] = NULL;
         faceHDFrames[i] = NULL;
-        faceAlignments[i] = NULL;
-        faceAlignmentsInColorSpace[i] = NULL;
-        faceModels[i] = NULL;
-        faceModelVCs[i] = 0;
         faceData[i] = new KLFaceData();
         faceData[i]->trackID = 0;
         bodies[i] = NULL;
@@ -241,14 +237,12 @@ void KLController::run()
 {
     isStop = false;
     while(!isStop){
+
         if(!isAvailable()){
             break; //Not continue, otherwise it will still use cpu
         }
-        HRESULT hr;
-        if(sourceMarker == SOURCE_TYPE::S_NONE){
-            break;
-        }
 
+        HRESULT hr;
         if(sourceMarker == SOURCE_TYPE::S_MULTI){
             continue;
         }
@@ -256,7 +250,6 @@ void KLController::run()
         /* color source */
         if(sourceMarker & SOURCE_TYPE::S_COLOR){
             if(!colorReader){
-                KLComPtr<IColorFrameSource> colorSource;
                 hr = sensor->get_ColorFrameSource(&colorSource);
                 if(SUCCEEDED(hr)){
                     safeRelease(colorReader);
@@ -296,8 +289,10 @@ void KLController::run()
                 }
             }
         }else if(colorReader){
+            safeRelease(colorSource);
             safeRelease(colorReader);
             safeRelease(colorDesc);
+            qDebug()<<"dfd";
             emit _readerInfo(false, SOURCE_TYPE::S_COLOR);
         }
 
@@ -380,54 +375,51 @@ void KLController::run()
                 for(int i = 0; i < BODY_COUNT; i++){
                     BOOLEAN isFaceTracked = false;
 
-                    QMutex mutex;
-                    if(mutex.tryLock()){
-                        //faceData[i]->frameHD = NULL;
-                        hr = faceHDReaders[i]->AcquireLatestFrame(&faceHDFrames[i]);
+                    //faceData[i]->frameHD = NULL;
+                    hr = faceHDReaders[i]->AcquireLatestFrame(&faceHDFrames[i]);
 
-                        if(SUCCEEDED(hr)){
-                            //qDebug()<<"huuray!!";
-                            hr = faceHDFrames[i]->get_IsTrackingIdValid(&isFaceTracked);
-                        }
-                        if(SUCCEEDED(hr)){
-                            faceData[i]->frameHD = faceHDFrames[i];
-                            faceData[i]->sourceHD = faceHDSources[i];
-                            faceData[i]->readerHD = faceHDReaders[i];
-                            faceData[i]->index = i;
-                        }
+                    if(SUCCEEDED(hr)){
+                        //qDebug()<<"huuray!!";
+                        hr = faceHDFrames[i]->get_IsTrackingIdValid(&isFaceTracked);
+                    }
+                    if(SUCCEEDED(hr)){
+                        faceData[i]->frameHD = faceHDFrames[i];
+                        faceData[i]->sourceHD = faceHDSources[i];
+                        faceData[i]->readerHD = faceHDReaders[i];
+                        faceData[i]->index = i;
+                    }
 
-                        if(!isFaceTracked){
-                            faceData[i]->isValid = false;
-                            safeRelease(faceHDFrames[i]);
-                            if(bodyReader){
-                                if(bodies[i] != NULL){
-                                    BOOLEAN isBodyTracked = false;
-                                    hr = bodies[i]->get_IsTracked(&isBodyTracked);
-                                    if(SUCCEEDED(hr)){
-                                        if(isBodyTracked){
-                                            UINT64 bodyID;
-                                            hr = bodies[i]->get_TrackingId(&bodyID);
-                                            if(SUCCEEDED(hr)){
-                                                faceHDSources[i]->put_TrackingId(bodyID);
-                                                faceData[i]->trackID = bodyID;
-                                            }
+                    if(!isFaceTracked){
+                        faceData[i]->isValid = false;
+                        safeRelease(faceHDFrames[i]);
+                        if(bodyReader){
+                            if(bodies[i] != NULL){
+                                BOOLEAN isBodyTracked = false;
+                                hr = bodies[i]->get_IsTracked(&isBodyTracked);
+                                if(SUCCEEDED(hr)){
+                                    if(isBodyTracked){
+                                        UINT64 bodyID;
+                                        hr = bodies[i]->get_TrackingId(&bodyID);
+                                        if(SUCCEEDED(hr)){
+                                            faceHDSources[i]->put_TrackingId(bodyID);
+                                            faceData[i]->trackID = bodyID;
                                         }
                                     }
                                 }
-                            }else{
-                                // open body source
-                                sourceMarker |= SOURCE_TYPE::S_BODY;
                             }
                         }else{
-                            hasValidFaceTrack = true;
-                            faceData[i]->isValid = true;
+                            // open body source
+                            sourceMarker |= SOURCE_TYPE::S_BODY;
                         }
-                        mutex.unlock();
+                    }else{
+                        hasValidFaceTrack = true;
+                        faceData[i]->isValid = true;
                     }
+
                 }
 
                 if(hasValidFaceTrack){
-                    qDebug()<<"p1";
+                    //qDebug()<<"p1";
                     emit _data(faceData, RESOURCE_TYPE::R_FACE_HD);
                 }
             }
@@ -436,13 +428,13 @@ void KLController::run()
                 safeRelease(faceHDReaders[i]);
                 safeRelease(faceHDFrames[i]);
                 safeRelease(faceHDSources[i]);
-                safeRelease(faceAlignments[i]);
-                safeRelease(faceModels[i]);
-                if(faceAlignmentsInColorSpace[i])
-                    delete faceAlignmentsInColorSpace[i];
                 faceData[i]->reset();
             }
             emit _readerInfo(false, SOURCE_TYPE::S_FACE_HD);
+        }
+
+        if(sourceMarker == SOURCE_TYPE::S_NONE){
+            break;
         }
 
         usleep(floor((1.0 / fps) * 1000 * 1000));

@@ -22,10 +22,6 @@ struct KLFaceData{
         sourceHD = NULL;
         readerHD = NULL;
         //frameHD = NULL;
-        modelVC = 0;
-        alignment = NULL;
-        model = NULL;
-        alignmentInColorSpace = NULL;
         index = 0;
         //trackID = 0;
     }
@@ -35,10 +31,6 @@ struct KLFaceData{
     IHighDefinitionFaceFrameSource* sourceHD;
     IHighDefinitionFaceFrameReader* readerHD;
     IHighDefinitionFaceFrame* frameHD;
-    IFaceModel* model;
-    UINT32 modelVC;
-    IFaceAlignment* alignment;
-    ColorSpacePoint* alignmentInColorSpace;
 };
 
 class KLController: public QThread
@@ -126,6 +118,7 @@ private:
     ICoordinateMapper* coordMapper;
     unsigned int sourceMarker;
 
+    IColorFrameSource* colorSource;
     IColorFrameReader* colorReader;
     IFrameDescription* colorDesc;
     int colorWidth;
@@ -139,14 +132,11 @@ private:
 
     IBodyFrameReader* bodyReader;
     IBody* bodies[BODY_COUNT];
+
     /* HD face */
     IHighDefinitionFaceFrameSource* faceHDSources[BODY_COUNT];
     IHighDefinitionFaceFrameReader* faceHDReaders[BODY_COUNT];
     IHighDefinitionFaceFrame* faceHDFrames[BODY_COUNT];
-    IFaceAlignment* faceAlignments[BODY_COUNT];
-    ColorSpacePoint* faceAlignmentsInColorSpace[BODY_COUNT];
-    IFaceModel* faceModels[BODY_COUNT];
-    UINT32 faceModelVCs[BODY_COUNT];
     KLFaceData* faceData[BODY_COUNT];
 
     //IHighDefinitionFaceFrameSource* faceHDSouc

@@ -11,6 +11,16 @@ inline void safeRelease(Interface *& pInterfaceToRelease)
     }
 }
 
+template<class Interface>
+inline void safeDelete(Interface *& pInterfaceToDelete)
+{
+    if (pInterfaceToDelete != NULL)
+    {
+        delete pInterfaceToDelete;
+        pInterfaceToDelete = NULL;
+    }
+}
+
 template<typename T>
 class KLComPtr
 {

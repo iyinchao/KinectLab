@@ -14,6 +14,7 @@
 #include "klctrlpanel.h"
 
 #include "module/klmknft.h"
+#include "module/klmsvmc.h"
 
 class KinectLab : public QMainWindow
 {
@@ -48,6 +49,7 @@ private:
     QMenu* ui_aboutMenu;
     QIcon ico_menuModule;
     QAction* act_m_knft;
+    QAction* act_m_svmc;
 
     KLMBase* m_module;
 };

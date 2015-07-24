@@ -6,12 +6,24 @@ KL2DView::KL2DView(int id, QWidget *parent):
     module(NULL),
     id(id)
 {
-   // this->setFixedSize(200,200);
+    // this->setFixedSize(200,200);
+}
+
+KL2DView::~KL2DView()
+{
+
 }
 
 void KL2DView::setModule(KLMBase *module)
 {
+    if(this->module){
+        disconnect(module, SIGNAL(destroyed()), this, SLOT(h_moduleDestroy()));
+    }
     this->module = module;
+    if(module){
+        connect(module, SIGNAL(destroyed()), this, SLOT(h_moduleDestroy()));
+    }
+
 }
 
 void KL2DView::setId(int id)
@@ -39,6 +51,13 @@ void KL2DView::paintEvent(QPaintEvent *event)
 //            }
 //        }
 //    }
-    module->paint2D(id, &painter, event);
+    if(module)
+        module->paint2D(id, &painter, event);
     painter.end();
+}
+
+void KL2DView::h_moduleDestroy()
+{
+    this->module = NULL;
+    this->repaint();
 }
