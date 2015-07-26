@@ -7,10 +7,13 @@
 #include <QBrush>
 #include <QFont>
 #include <QPen>
+#include <QResizeEvent>
+#include <QPlainTextEdit>
 
 #include "../klcontroller.h"
 #include "../kl2dview.h"
 #include "../klglview.h"
+#include "../klglutil.h"
 
 class KLMBase : public QWidget
 {
@@ -29,9 +32,12 @@ signals:
 
 public slots:
     virtual void init();
+    virtual void initGL(int targetID);
     virtual void paint2D(int targetID, QPainter *painter, QPaintEvent *event);
-    virtual void paintGL2D(int targetID, QPainter* painter, QPaintEvent* event);
-    virtual void paintGL3D(int targetID);
+    virtual void paint3D(int targetID);
+    virtual void init3D(int targetID);
+    virtual void viewResize2D(int targetID, QResizeEvent* event);
+    virtual void viewResize3D(int targetID, int w, int h);
 
 protected:
 

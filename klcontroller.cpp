@@ -390,7 +390,6 @@ void KLController::run()
                     }
 
                     if(!isFaceTracked){
-                        faceData[i]->isValid = false;
                         safeRelease(faceHDFrames[i]);
                         if(bodyReader){
                             if(bodies[i] != NULL){
@@ -415,7 +414,6 @@ void KLController::run()
                         hasValidFaceTrack = true;
                         faceData[i]->isValid = true;
                     }
-
                 }
 
                 if(hasValidFaceTrack){

@@ -17,8 +17,10 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event);
+    void resizeEvent(QResizeEvent *event);
 
 signals:
+    void _viewResize(int id, QResizeEvent*);
 
 public slots:
     void h_moduleDestroy();

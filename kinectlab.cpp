@@ -92,6 +92,9 @@ void KinectLab::initUI()
     ui_mainWgt = new QWidget(this);
     ui_mainLt = new QGridLayout(ui_mainWgt);
     ui_mainLt->setContentsMargins(0,0,0,0);
+//    ui_mainLt->setHorizontalSpacing(0);
+//    ui_mainLt->setVerticalSpacing();
+
     this->setCentralWidget(ui_mainWgt);
 
     ui_ctrlPanel = new KLCtrlPanel(this);

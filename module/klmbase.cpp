@@ -22,17 +22,33 @@ void KLMBase::init()
     //emit _setUI(ui_ctrlPanelWgt, WINDOW::MAIN);
 }
 
+void KLMBase::initGL(int targetID)
+{
+
+}
+
 void KLMBase::paint2D(int targetID, QPainter *painter, QPaintEvent *event)
 {
 
 }
 
-void KLMBase::paintGL2D(int targetID, QPainter *painter, QPaintEvent *event)
+
+void KLMBase::paint3D(int targetID)
 {
 
 }
 
-void KLMBase::paintGL3D(int targetID)
+void KLMBase::init3D(int targetID)
+{
+
+}
+
+void KLMBase::viewResize2D(int targetID, QResizeEvent *event)
+{
+
+}
+
+void KLMBase::viewResize3D(int targetID, int w, int h)
 {
 
 }
@@ -45,6 +61,7 @@ void KLMBase::initUI()
     ui_ctrlPanelLt = new QGridLayout(ui_ctrlPanelWgt);
 
     ui_mainLt->setContentsMargins(0,0,0,0);
+    ui_mainLt->setSpacing(0);
     ui_ctrlPanelLt->setContentsMargins(0,0,0,0);
 }
 

@@ -4,7 +4,6 @@ KLGLUtil::KLGLUtil()
 {
 
 }
-
 //adopted here: http://www.cburch.com/cs/490/sched/feb8/index.html
 void KLGLUtil::drawSphere(double radius, int lats, int longs)
 {
@@ -41,7 +40,7 @@ void KLGLUtil::drawSphere(double radius, int lats, int longs)
 
 void KLGLUtil::drawAxis(double size)
 {
-    //x
+    //x red
     glColor3f(1.0,0,0);
     glBegin(GL_LINES);
     glVertex3f(0,0,0);
@@ -52,7 +51,7 @@ void KLGLUtil::drawAxis(double size)
     glRotatef(90,0,0,-1);
     drawCylinder(size/15, size/128, size/5,16,2);
     glPopMatrix();
-    //y
+    //y green
     glColor3f(0,1.0,0);
     glBegin(GL_LINES);
     glVertex3f(0,0,0);
@@ -63,7 +62,7 @@ void KLGLUtil::drawAxis(double size)
     drawCylinder(size/15, size/128, size/5,16,2);
     //glutSolidCone(size/12, size/4, 16,16);
     glPopMatrix();
-    //z
+    //z blue
     glColor3f(0,0,1.0);
     glBegin(GL_LINES);
     glVertex3f(0,0,0);

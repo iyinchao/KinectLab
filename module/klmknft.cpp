@@ -26,6 +26,7 @@ KLMKnft::~KLMKnft()
     //ctrler->startStream(KLController::SOURCE_TYPE::S_NONE);
     //ui_2DView->setModule(NULL);
     //qDebug()<<"delete mo";
+    //delete ui_2DView;
     for(int i = 0; i < BODY_COUNT; i++){
         safeRelease(faceAlignments[i]);
         safeDelete(faceAlignmentsInColorSpace[i]);
@@ -74,7 +75,6 @@ void KLMKnft::paint2D(int targetID, QPainter *painter, QPaintEvent *)
             }
             if(SUCCEEDED(hr) && !faceModelVC){
                 hr = GetFaceModelVertexCount(&faceModelVC);
-                qDebug()<<faceModelVC;
             }
 
             if(faceData && faceData[i]->isValid && faceAlignments[i] && faceModels[i] && faceModelVC){

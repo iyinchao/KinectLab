@@ -3,6 +3,7 @@
 
 #include <QGLWidget>
 #include <QPainter>
+#include <GL/GLU.h>
 
 class KLMBase;
 
@@ -16,9 +17,9 @@ public:
     const int getId();
 
 signals:
-    void _resize(int w, int h, int id);
 
 public slots:
+    void h_moduleDestroy();
 
 protected:
     void initializeGL();

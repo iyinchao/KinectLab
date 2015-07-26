@@ -23,7 +23,7 @@ void KL2DView::setModule(KLMBase *module)
     if(module){
         connect(module, SIGNAL(destroyed()), this, SLOT(h_moduleDestroy()));
     }
-
+    this->repaint();
 }
 
 void KL2DView::setId(int id)
@@ -38,6 +38,7 @@ const int KL2DView::getId()
 
 void KL2DView::paintEvent(QPaintEvent *event)
 {
+    //qDebug()<<this;
     QPainter painter;
     painter.begin(this);
     //painter.setRenderHint(QPainter::Antialiasing);
@@ -51,13 +52,23 @@ void KL2DView::paintEvent(QPaintEvent *event)
 //            }
 //        }
 //    }
-    if(module)
+
+    if(module){
         module->paint2D(id, &painter, event);
+    }
     painter.end();
+}
+
+void KL2DView::resizeEvent(QResizeEvent *event)
+{
+    if(module){
+        module->viewResize2D(id, event);
+    }
 }
 
 void KL2DView::h_moduleDestroy()
 {
     this->module = NULL;
     this->repaint();
+    KL2DView::~KL2DView();
 }
