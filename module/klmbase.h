@@ -9,6 +9,8 @@
 #include <QPen>
 #include <QResizeEvent>
 #include <QPlainTextEdit>
+#include <QtMath>
+
 
 #include "../klcontroller.h"
 #include "../kl2dview.h"

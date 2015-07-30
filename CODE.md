@@ -177,3 +177,188 @@
 //            int i = faceData->index;
 
 //        }
+
+##TAG　paint2d case 3
+
+        painter->fillRect(0,0,ui_viewSmallSize.width(), ui_viewSmallSize.height(), QColor("black"));
+
+        HRESULT hr = E_PENDING;
+
+        for(int i = 0; i < BODY_COUNT; i++){
+
+            if(!faceAlignment){
+                hr = CreateFaceAlignment(&(faceAlignment));
+            }
+            if(SUCCEEDED(hr) && !faceModel){
+                float sd[FaceShapeDeformations_Count] = {0.0f};
+                hr = CreateFaceModel(1.0f, FaceShapeDeformations::FaceShapeDeformations_Count, sd, &faceModel);
+            }
+            if(SUCCEEDED(hr) && !faceModelVC){
+                hr = GetFaceModelVertexCount(&faceModelVC);
+            }
+            if(faceData && faceData[i]->isValid){
+                qDebug()<<"P3"<<faceData[i]->isValid<<i;
+            }
+
+            if(faceData && faceData[i]->isValid && faceAlignment && faceModel && faceModelVC){
+
+                hr = faceData[i]->frameHD->GetAndRefreshFaceAlignmentResult(faceAlignment);
+
+                if(SUCCEEDED(hr)){
+                    if(!headPivot){
+                        headPivot = new CameraSpacePoint;
+                    }
+                    hr = faceAlignment->get_HeadPivotPoint(headPivot);
+                }
+                //std::cout<<std::hex<<hr<<std::endl;
+                if(SUCCEEDED(hr)){
+                    if(!faceBound){
+                        faceBound = new RectI;
+                    }
+                    hr = faceAlignment->get_FaceBoundingBox(faceBound);
+                }
+                if(SUCCEEDED(hr)){
+                    if(!faceOrient){
+                        faceOrient = new Vector4;
+                    }
+                    hr = faceAlignment->get_FaceOrientation(faceOrient);
+                }
+
+                if(SUCCEEDED(hr)){
+                    if(!faceAlignmentCam){
+                        faceAlignmentCam = new CameraSpacePoint[faceModelVC];
+                    }
+                    hr = faceModel->CalculateVerticesForAlignment(faceAlignment, faceModelVC, faceAlignmentCam);
+                }
+                if(SUCCEEDED(hr)){
+//                    for(UINT j = 0; j < faceModelVC; j++){
+//                        v[j].X -= headPivot->X;
+//                        v[j].Y -= headPivot->Y;
+//                        v[j].Z -= headPivot->Z;
+//                    }
+                    if(!faceAlignmentColor){
+                        faceAlignmentColor = new ColorSpacePoint[faceModelVC];
+                    }
+                    if(!headPivotColor){
+                        headPivotColor = new ColorSpacePoint;
+                    }
+                    hr = ctrler->getCoordMapper()->MapCameraPointsToColorSpace(faceModelVC, faceAlignmentCam, faceModelVC, faceAlignmentColor);
+                    hr = ctrler->getCoordMapper()->MapCameraPointToColorSpace(*headPivot, headPivotColor);
+                }
+            }
+
+
+
+            painter->setRenderHint(QPainter::Antialiasing);
+
+            double rate = ui_pointView->height() / (colorHeight?colorHeight:1.0);
+            double centerX = ui_pointView->width() / 2.0;
+            double centerY = ui_pointView->height() / 2.0;
+
+            if(faceAlignmentColor){
+                for(UINT j = 0; j < faceModelVC; j++){
+                    if(j == 91 ||
+                       j == 687 ||
+                       j == 1072||
+                            j == 10 ||
+                            j == 412 ||
+                            j == 933 ||
+                            j == 458 ||
+                            j == 674 ||
+                            j == 156 ||
+                            j == 783){
+                        pen.setWidth(3);
+                        pen.setColor(QColor("white"));
+                        painter->setPen(pen);
+                    }else{
+                        pen.setWidth(1);
+                        pen.setColor(QColor("red"));
+                        painter->setPen(pen);
+                    }
+
+                    painter->drawPoint((faceAlignmentColor[j].X - headPivotColor->X ) * rate * 2 + centerX,
+                                       (faceAlignmentColor[j].Y - headPivotColor->Y) * rate * 2 + centerY);
+                }
+                if(faceData && faceData[i] && !faceData[i]->isValid){
+                    inValidFrameCount++;
+                    if(inValidFrameCount > 2){
+                        delete faceAlignmentColor;
+                        faceAlignmentColor = NULL;
+                        faceBound->Left = 0;
+
+                        inValidFrameCount = 0;
+                    }
+                }
+            }
+            if(faceData && faceData[i] && faceData[i]->isValid){
+                break;
+            }
+        }
+
+
+##TAG paint3D matrix
+
+//                QQuaternion quaternion(faceOrient->w, faceOrient->x, faceOrient->y, faceOrient->z);
+//                QMatrix4x4 matrix;
+//                matrix.setToIdentity();
+//                matrix.rotate(quaternion);
+//                GLdouble* glMatrix = new GLdouble[16];
+//                for(int j = 0; j < 16; j++){
+//                    glMatrix[j] = matrix(j / 4, j % 4);
+//                }
+//                //qDebug()<<quaternion.x();
+//                glPushMatrix();
+//                glMultMatrixd(glMatrix);
+//                glScalef(3,3,3);
+glPopMatrix();
+
+
+        switch(i){
+        case P_MC_1: //positive/mouse closed/smile min
+            break;
+        case P_MC_2: //positive/mouse closed/smile medium
+            break;
+        case P_MC_3: //positive/mouse closed/smile max
+            break;
+        case P_MO1_1: //positive/mouse opened/min/smile min
+            break;
+        case P_MO1_2: //positive/mouse opened/min/smile med
+            break;
+        case P_MO1_3: //positive/mouse opened/min/smile max
+            break;
+        case P_MO2_1: //positive/mouse opened/med/smile min
+            break;
+        case P_MO2_2: //positive/mouse opened/med/smile med
+            break;
+        case P_MO2_3: //positive/mouse opened/med/smile max
+            break;
+        case P_MO3_1: //positive/mouse opened/max/smile min
+            break;
+        case P_MO3_2: //positive/mouse opened/max/smile med
+            break;
+        case P_MO3_3: //positive/mouse opened/max/smile max
+            break;
+        case N_AU27_1: //mouse stretch/min
+            break;
+        case N_AU27_2: //mouse stretch/med
+            break;
+        case N_AU27_3: //mouse stretch/max
+            break;
+        case N_AU18_1: //lip pucker(嘴唇皱起)/min
+            break;
+        case N_AU18_2: //lip pucker(嘴唇皱起)/max
+            break;
+        case N_AU22_1: //lip funneler/min
+            break;
+        case N_AU22_2: //lip funneler/max
+            break;
+        case N_AU20_1: //lip stretcher/min
+            break;
+        case N_AU20_2: //lip stretcher/max
+            break;
+        case N_AU15_1: //lip corner depressor/min
+            break;
+        case N_AU15_2: //lip corner depressor/max
+            break;
+        case N_NE: //Neutral face
+            break;
